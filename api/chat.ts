@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'http';
-import { CharacterState, ChatMessage } from '../src/types/characterState';
-import { CanonicalDialogue } from '../src/services/CanonicalDialogue';
+import type { CharacterState, ChatMessage } from '../src/types/characterState';
+import { CanonicalDialogue } from './canonicalDialogue';
 
 export interface ChatRequestBody {
   characterState: CharacterState;
@@ -287,11 +287,18 @@ export default async function handler(req: IncomingMessage & { body?: any }, res
   }
 
   try {
-    let rawBody = '';
-    for await (const chunk of req) {
-      rawBody += chunk;
+    let body: ChatRequestBody;
+    if (req.body) {
+      body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    } else if (typeof req[Symbol.asyncIterator] === 'function') {
+      let rawBody = '';
+      for await (const chunk of req) {
+        rawBody += chunk;
+      }
+      body = JSON.parse(rawBody || '{}');
+    } else {
+      body = {} as any;
     }
-    const body: ChatRequestBody = JSON.parse(rawBody || '{}');
 
     const result = await handleChatRequest(body);
     res.statusCode = 200;
