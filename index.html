@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>COLONY | Social Deduction</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    body, html {
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #0c0704;
+      background-image: 
+        radial-gradient(ellipse at center, rgba(217, 119, 6, 0.09) 0%, rgba(20, 13, 8, 0.92) 65%, #0a0603 100%),
+        repeating-linear-gradient(0deg, transparent, transparent 31px, rgba(245, 158, 11, 0.015) 31px, rgba(245, 158, 11, 0.015) 32px);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #e2e8f0;
+    }
+    #game-container {
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      position: absolute;
+      top: 0;
+      left: 0;
+      overflow: hidden;
+    }
+    canvas {
+      box-shadow: 
+        0 0 50px rgba(0, 0, 0, 0.95),
+        0 0 1px rgba(245, 158, 11, 0.25);
+      image-rendering: pixelated;
+    }
+    #orientation-warning {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      background: rgba(14, 9, 5, 0.98);
+      backdrop-filter: blur(8px);
+      z-index: 99999;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 24px;
+    }
+    #mobile-notice {
+      display: none;
+      position: fixed;
+      z-index: 100000;
+      top: max(12px, env(safe-area-inset-top));
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 32px);
+      max-width: 460px;
+      padding: 14px 16px;
+      border: 1px solid #5c3a21;
+      border-radius: 8px;
+      background: #18110b;
+      color: #e2e8f0;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    #mobile-notice[hidden] { display: none; }
+    #mobile-notice button {
+      margin-top: 8px;
+      padding: 6px 12px;
+      border: 1px solid #5c3a21;
+      border-radius: 4px;
+      background: #2d1a04;
+      color: #fbbf24;
+      font: inherit;
+      cursor: pointer;
+    }
+    @media (pointer: coarse) and (max-width: 1024px) {
+      #mobile-notice:not([hidden]) { display: block; }
+    }
+    @keyframes phoneRotate {
+      0%, 20% { transform: rotate(0deg); }
+      50%, 70% { transform: rotate(90deg); }
+      100% { transform: rotate(0deg); }
+    }
+    .rotate-icon {
+      font-size: 48px;
+      margin-bottom: 20px;
+      display: inline-block;
+      animation: phoneRotate 2.5s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body>
+  <aside id="mobile-notice" aria-label="Mobile demo notice">
+    <p>COLONY is best experienced on desktop.<br>Open this demo on a laptop or desktop for the full investigation experience.</p>
+    <button type="button" onclick="document.getElementById('mobile-notice').hidden = true">Dismiss</button>
+  </aside>
+  <div id="orientation-warning">
+    <div class="rotate-icon">📱</div>
+    <h2 style="font-family: Courier, monospace; color: #f59e0b; font-size: 18px; margin-bottom: 10px; letter-spacing: 1px;">ROTATE YOUR DEVICE</h2>
+    <p style="color: #94a3b8; font-size: 13px; max-width: 300px; line-height: 1.5;">Please rotate your device to landscape for the best subterranean colony experience.</p>
+  </div>
+
+  <div id="game-container"></div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
