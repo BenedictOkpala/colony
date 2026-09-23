@@ -763,8 +763,8 @@ export class InterrogationModal {
       this.isWaitingResponse = false;
       this.appendMessage(this.state.name.toUpperCase(), replyText, false, isError);
 
-      // Process story lead discovery strictly on the displayed response and matched intent
-      this.processLeadDiscovery(replyText, intent);
+      // Process story lead discovery strictly on the displayed response, question intent, and stage validity
+      this.processLeadDiscovery(replyText, intent, question);
       this.updateBottomControls();
     };
 
@@ -782,7 +782,8 @@ export class InterrogationModal {
 
     // AntSeed Request Execution
     try {
-      const response = await DialogueService.askCharacter(this.state, question, abortController.signal);
+      const currentStage = this.roundManager?.getStage();
+      const response = await DialogueService.askCharacter(this.state, question, abortController.signal, currentStage);
 
       if (!turnResolved && this.currentTurnId === turnId) {
         const cleanReply = response.reply?.trim() || '';
@@ -806,29 +807,45 @@ export class InterrogationModal {
     }
   }
 
-  private processLeadDiscovery(replyText: string, intent?: CanonicalIntent | null): void {
-    const prevStage = this.roundManager?.getStage();
-    let discoveredFact: CanonicalIntent | null = null;
+  private processLeadDiscovery(replyText: string, intent?: CanonicalIntent | null, question?: string): void {
+    const currentStage = this.roundManager?.getStage();
+    if (!currentStage) return;
 
-    if (intent) {
-      discoveredFact = intent;
-    } else {
-      const currentStage = this.roundManager?.getStage();
+    const prevStage = currentStage;
+    let discoveredFact: CanonicalIntent | null = null;
+    const qLower = (question || '').toLowerCase().trim();
+
+    // 1. If intent was found, verify that question actually targets this stage/fact and the reply communicates it
+    if (intent && intent.validStages.includes(currentStage)) {
+      const qMatches = intent.questionMatches(qLower, currentStage, this.state);
+      const rMatches = intent.responseMatches(replyText);
+      if (qMatches && rMatches) {
+        discoveredFact = intent;
+      }
+    }
+
+    // 2. Secondary check across all stage facts for this character (strictly constrained to currentStage)
+    if (!discoveredFact) {
       for (const fact of CanonicalDialogue.CANONICAL_INTENTS) {
-        if (fact.characterId === this.state.id.toLowerCase() && fact.leadId) {
-          if (!currentStage || fact.validStages.includes(currentStage)) {
-            if (fact.responseMatches(replyText)) {
-              discoveredFact = fact;
-              break;
-            }
+        if (
+          fact.characterId === this.state.id.toLowerCase() &&
+          fact.leadId &&
+          fact.validStages.includes(currentStage)
+        ) {
+          const qMatches = fact.questionMatches(qLower, currentStage, this.state);
+          const rMatches = fact.responseMatches(replyText);
+          if (qMatches && rMatches) {
+            discoveredFact = fact;
+            break;
           }
         }
       }
     }
 
-    if (discoveredFact) {
-      console.log(`[COLONY] fact: ${discoveredFact.id}`);
-      if (discoveredFact.leadId && this.onLeadDiscovered) {
+    // 3. Mandatory client-side stage guard: fact must be valid for currentStage before ANY lead is recorded
+    if (discoveredFact && discoveredFact.leadId && discoveredFact.validStages.includes(currentStage)) {
+      console.log(`[COLONY] fact validated: ${discoveredFact.id} for stage ${currentStage}`);
+      if (this.onLeadDiscovered) {
         this.onLeadDiscovered(discoveredFact.leadId);
         const newStage = this.roundManager?.getStage();
         if (discoveredFact.isStageCompleting) {
@@ -838,7 +855,7 @@ export class InterrogationModal {
             console.log(`[COLONY] target: ${this.roundManager?.getActiveSuspectId() || 'none (world target)'}`);
             console.log(`[COLONY] HUD synchronized`);
           } else {
-            console.error(`[COLONY ERROR] Stage transition failed! Current stage: ${prevStage}, Fact: ${discoveredFact.id}, Lead: ${discoveredFact.leadId}, Expected new stage but remained on ${prevStage}`);
+            console.error(`[COLONY ERROR] Stage transition failed! Current stage: ${prevStage}, Fact: ${discoveredFact.id}, Lead: ${discoveredFact.leadId}`);
           }
         }
       }

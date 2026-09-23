@@ -8,6 +8,7 @@ import { InterrogationModal } from '../ui/InterrogationModal';
 import { EmergencyMeetingModal } from '../ui/EmergencyMeetingModal';
 import { HUDOverlay } from '../ui/HUDOverlay';
 import { VirtualJoystick } from '../ui/VirtualJoystick';
+import { MissionBriefingModal } from '../ui/MissionBriefingModal';
 import { CharacterConfig } from '../types/colony';
 import { 
   INITIAL_ROOK_STATE, 
@@ -30,6 +31,8 @@ export class GameScene extends Phaser.Scene {
   private generatorModal!: GeneratorTaskModal;
   private interrogationModal!: InterrogationModal;
   private emergencyMeetingModal!: EmergencyMeetingModal;
+  private missionBriefingModal!: MissionBriefingModal;
+  private isCinematicActive: boolean = true;
   private isMeetingOpen: boolean = false;
   private hud!: HUDOverlay;
   private joystick?: VirtualJoystick;
@@ -285,6 +288,8 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.isMeetingOpen = false;
+    this.isCinematicActive = true;
+    this.missionBriefingModal = new MissionBriefingModal(this);
     this.emergencyMeetingModal = new EmergencyMeetingModal(this, this.roundManager, () => {
       this.replayRound();
     });
@@ -324,11 +329,15 @@ export class GameScene extends Phaser.Scene {
     // Initialize Virtual Joystick if on touch/mobile
     if (InputMode.isTouch()) {
       this.enableTouchJoystick();
+      this.joystick?.setVisible(false);
     }
 
     InputMode.onModeChanged((isTouch) => {
-      if (isTouch && !this.joystick) {
+      if (isTouch) {
         this.enableTouchJoystick();
+        if (this.joystick) {
+          this.joystick.setVisible(!this.isCinematicActive);
+        }
       }
     });
 
@@ -364,6 +373,7 @@ export class GameScene extends Phaser.Scene {
       this.setupCameraLayers();
       this.hud.repositionOnResize();
       this.joystick?.repositionOnResize();
+      this.missionBriefingModal?.repositionOnResize();
     };
     this.scale.on('resize', resizeViewport);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -378,6 +388,9 @@ export class GameScene extends Phaser.Scene {
     if (!this.uiCamera) return;
 
     const uiObjects: Phaser.GameObjects.GameObject[] = [this.hud.container];
+    if (this.missionBriefingModal?.container) {
+      uiObjects.push(this.missionBriefingModal.container);
+    }
     if (this.joystick) {
       uiObjects.push(this.joystick.container);
       uiObjects.push(this.joystick['touchZone']);
@@ -459,6 +472,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private triggerIncidentEffects(): void {
+    const genTaskX = 7 * ColonyMap.TILE_SIZE;
+    const genTaskY = 19 * ColonyMap.TILE_SIZE;
+
     // 1. BOOM: Screen Shake / Deep impact
     this.cameras.main.shake(750, 0.02);
 
@@ -502,6 +518,59 @@ export class GameScene extends Phaser.Scene {
       ]
     });
 
+    // 3. Generator Sabotage Visual Effects (Flash, Shockwave & High-Velocity Sparks)
+    // 3a. Expanding Shockwave Ring
+    const shockwave = this.add.circle(genTaskX, genTaskY, 14, 0xef4444, 0);
+    shockwave.setStrokeStyle(3, 0xffedd5);
+    shockwave.setDepth(48);
+    this.tweens.add({
+      targets: shockwave,
+      scaleX: 5.5,
+      scaleY: 5.5,
+      alpha: 0,
+      duration: 650,
+      ease: 'Quad.easeOut',
+      onComplete: () => shockwave.destroy()
+    });
+
+    // 3b. Bright Core Flash Burst
+    const flash = this.add.circle(genTaskX, genTaskY, 28, 0xfffbeb, 0.92);
+    flash.setDepth(49);
+    this.tweens.add({
+      targets: flash,
+      scaleX: 3.2,
+      scaleY: 3.2,
+      alpha: 0,
+      duration: 380,
+      ease: 'Quad.easeOut',
+      onComplete: () => flash.destroy()
+    });
+
+    // 3c. Procedural Sparks / Embers bursting outwards from the generator
+    for (let i = 0; i < 28; i++) {
+      const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+      const dist = Phaser.Math.Between(35, 120);
+      const sparkColor = Phaser.Utils.Array.GetRandom([0xfbbf24, 0xf97316, 0xef4444, 0xffedd5]);
+      const spark = this.add.circle(
+        genTaskX + Math.cos(angle) * 6,
+        genTaskY + Math.sin(angle) * 6,
+        Phaser.Math.Between(2, 4),
+        sparkColor,
+        0.95
+      );
+      spark.setDepth(47);
+      this.tweens.add({
+        targets: spark,
+        x: spark.x + Math.cos(angle) * dist,
+        y: spark.y + Math.sin(angle) * dist + Phaser.Math.Between(8, 24),
+        alpha: 0,
+        scale: 0.2,
+        duration: Phaser.Math.Between(550, 1100),
+        ease: 'Quad.easeOut',
+        onComplete: () => spark.destroy()
+      });
+    }
+
     // Generator console shifts to emergency flashing amber/red
     this.generatorGlow.setFillStyle(0xef4444, 0.45);
     this.tweens.add({
@@ -514,10 +583,10 @@ export class GameScene extends Phaser.Scene {
       repeat: -1
     });
 
-    // 3. Dust / Spore particle bursts around player & generator
-    for (let i = 0; i < 20; i++) {
-      const pX = this.player.x + Phaser.Math.Between(-90, 90);
-      const pY = this.player.y + Phaser.Math.Between(-90, 90);
+    // 4. Dust / Spore particle bursts around player
+    for (let i = 0; i < 18; i++) {
+      const pX = this.player.x + Phaser.Math.Between(-80, 80);
+      const pY = this.player.y + Phaser.Math.Between(-80, 80);
       const spore = this.add.circle(pX, pY, Phaser.Math.Between(2, 4), 0xfbbf24, 0.8);
       spore.setDepth(45);
       this.tweens.add({
@@ -525,19 +594,45 @@ export class GameScene extends Phaser.Scene {
         y: spore.y + Phaser.Math.Between(18, 40),
         x: spore.x + Phaser.Math.Between(-15, 15),
         alpha: 0,
-        duration: Phaser.Math.Between(900, 1600),
+        duration: Phaser.Math.Between(900, 1500),
         ease: 'Quad.easeOut',
         onComplete: () => spore.destroy()
       });
     }
 
-    // 4. Alert banner in HUD
+    // 5. Alert banner in HUD
     this.hud.showIncidentAlert('POWER FAILURE', 'Generator signal lost in sector 4');
 
-    // 5. Trigger alert reaction on all nearby NPCs
+    // 6. Trigger alert reaction on all nearby NPCs
     this.npcs.forEach(npc => {
       npc.alertReaction();
     });
+
+    // 7. Cinematic Camera Choreography: Pan to Generator -> Hold -> Return to Player -> Mission Briefing
+    this.cameras.main.stopFollow();
+    this.cameras.main.pan(genTaskX, genTaskY, 900, 'Cubic.easeInOut');
+
+    this.time.delayedCall(2000, () => {
+      // Smoothly pan camera back to player's position
+      this.cameras.main.pan(this.player.x, this.player.y, 850, 'Cubic.easeInOut');
+      this.time.delayedCall(880, () => {
+        // Restore camera follow on player
+        this.cameras.main.startFollow(this.player.sprite, true, 0.08, 0.08);
+
+        // Present mission briefing panel
+        this.missionBriefingModal.show(() => {
+          this.onMissionBriefingDismissed();
+        });
+      });
+    });
+  }
+
+  private onMissionBriefingDismissed(): void {
+    this.isCinematicActive = false;
+    if (InputMode.isTouch()) {
+      this.joystick?.setVisible(true);
+    }
+    console.log('[COLONY] Opening cinematic briefing completed, gameplay active');
   }
 
   private enableTouchJoystick(): void {
@@ -548,13 +643,19 @@ export class GameScene extends Phaser.Scene {
   }
 
   public update(_time: number, delta: number): void {
-    // Freeze player input if any modal is active
-    if (this.generatorModal?.isOpen || this.interrogationModal?.isOpen || this.emergencyMeetingModal?.isOpen || this.isMeetingOpen) {
+    const isInputBlocked = this.isCinematicActive || 
+      this.missionBriefingModal?.isOpen || 
+      this.generatorModal?.isOpen || 
+      this.interrogationModal?.isOpen || 
+      this.emergencyMeetingModal?.isOpen || 
+      this.isMeetingOpen;
+
+    if (isInputBlocked) {
       this.player.sprite.setVelocity(0, 0);
-      return;
+    } else {
+      this.player.update();
     }
 
-    this.player.update();
     this.npcs.forEach(npc => npc.update());
 
     // Update current room name in HUD
@@ -564,9 +665,16 @@ export class GameScene extends Phaser.Scene {
 
     // Update Round Manager State & Guide Pointer & Station Map
     if (this.roundManager) {
+      const targetRoomId = this.roundManager.getTargetRoomId();
       this.roundManager.update(delta, this.player.x, this.player.y, roomId);
+      this.hud.updateTargetRoom(targetRoomId);
       this.hud.updateGuidePointer(this.player.x, this.player.y);
-      this.hud.updateStationMap(roomId, this.roundManager.getTargetRoomId());
+      this.hud.updateStationMap(roomId, targetRoomId);
+    }
+
+    if (isInputBlocked) {
+      this.hud.hideInteractPrompt();
+      return;
     }
 
     // ==============================================
@@ -574,11 +682,12 @@ export class GameScene extends Phaser.Scene {
     // ==============================================
     const isTouch = InputMode.isTouch();
     const activeSuspect = this.roundManager.getActiveSuspectId();
+    const hasActiveSuspect = Boolean(activeSuspect);
 
-    // 1. Update proximity visual indicators for all NPCs (highlight active suspect)
+    // 1. Update proximity visual indicators for all NPCs (highlight active suspect and suppress non-targets)
     this.npcs.forEach(npc => {
       const isActive = npc.config.id === activeSuspect;
-      npc.updateProximityIndicator(this.player.x, this.player.y, isTouch, isActive);
+      npc.updateProximityIndicator(this.player.x, this.player.y, isTouch, isActive, hasActiveSuspect);
     });
 
     // 2. Identify candidate interactable targets
@@ -736,16 +845,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   private talkAmbientNPC(npc: NPC): void {
-    const activeSuspect = this.roundManager?.getActiveSuspectId();
-    const currentObjective = this.roundManager?.getCurrentObjective();
-
-    if (activeSuspect && activeSuspect !== npc.config.id) {
-      const dialogue = `${npc.config.name} is busy with duties. Objective: ${currentObjective.title}.`;
-      npc.showSpeechBubble(dialogue);
-    } else {
-      const dialogue = `${npc.config.name} is focused on their station.`;
-      npc.showSpeechBubble(dialogue);
-    }
+    const dialogue = `${npc.config.name} is busy with duties.`;
+    npc.showSpeechBubble(dialogue, 2200);
   }
 
   private triggerRelaySabotageEffects(): void {
@@ -862,6 +963,8 @@ export class GameScene extends Phaser.Scene {
 
   private replayRound(): void {
     this.isMeetingOpen = false;
+    this.isCinematicActive = true;
+    this.missionBriefingModal?.dismiss();
     this.emergencyMeetingModal?.close();
     this.interrogationModal?.close();
     this.generatorModal?.close();

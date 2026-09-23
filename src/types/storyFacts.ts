@@ -45,18 +45,14 @@ export const STORY_FACTS: StoryFactDefinition[] = [
     questionMatches: (q, stage) => {
       if (stage !== 'INVESTIGATE_GENERATOR' && stage !== 'QUESTION_ROOK') return false;
       return (
-        q.includes('see') ||
-        q.includes('saw') ||
-        q.includes('vale') ||
-        q.includes('anyone') ||
-        q.includes('anybody') ||
-        q.includes('who') ||
         q.includes('what happened') ||
-        q.includes('generator') ||
         q.includes('blackout') ||
-        q.includes('power') ||
-        q.includes('tunnel') ||
-        q.includes('pass')
+        q.includes('power failure') ||
+        q.includes('power cut') ||
+        q.includes('generator') ||
+        q.includes('vale') ||
+        ((q.includes('who') || q.includes('anyone') || q.includes('anybody') || q.includes('did you see')) &&
+          (q.includes('pass') || q.includes('around') || q.includes('near') || q.includes('tunnel') || q.includes('here') || q.includes('by') || q.includes('corridor') || q.includes('suspect') || q.includes('blackout')))
       );
     },
     responseMatches: (r) => {
@@ -82,9 +78,11 @@ export const STORY_FACTS: StoryFactDefinition[] = [
         q.includes('why was vale') ||
         q.includes('what were you doing') ||
         q.includes('rook says') ||
-        q.includes('route') ||
+        q.includes('rook saw') ||
+        q.includes('your route') ||
         q.includes('why there') ||
-        q.includes('near the generator')
+        q.includes('why near') ||
+        (q.includes('passing through') || q.includes('in the tunnel'))
       );
     },
     responseMatches: (r) => {
@@ -106,21 +104,17 @@ export const STORY_FACTS: StoryFactDefinition[] = [
     isStageCompleting: true,
     questionMatches: (q, stage) => {
       if (stage !== 'QUESTION_VALE') return false;
-      // In QUESTION_VALE stage, any inquiry about Rook, what was seen, station, or general situation matches
       return (
         q.includes('rook') ||
-        q.includes('station') ||
-        q.includes('empty') ||
+        q.includes('his station') ||
+        q.includes('at the station') ||
+        q.includes('at his console') ||
+        q.includes('at the console') ||
         q.includes('unattended') ||
+        q.includes('empty console') ||
         q.includes('abandoned') ||
-        q.includes('see') ||
-        q.includes('saw') ||
-        q.includes('there') ||
-        q.includes('at his') ||
-        q.includes('console') ||
-        q.includes('generator') ||
-        q.includes('anyone') ||
-        q.includes('who')
+        ((q.includes('what did you see') || q.includes('did you see anyone') || q.includes('who was at') || q.includes('anyone at')) &&
+          (q.includes('generator') || q.includes('console') || q.includes('station') || q.includes('there')))
       );
     },
     responseMatches: (r) => {

@@ -1,4 +1,5 @@
 import { CharacterState } from '../types/characterState';
+import { RoundStage } from '../types/round';
 
 export interface DialogueResponse {
   success: boolean;
@@ -11,7 +12,8 @@ export class DialogueService {
   public static async askCharacter(
     state: CharacterState,
     userMessage: string,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    roundStage?: RoundStage
   ): Promise<DialogueResponse> {
     try {
       const response = await fetch('/api/chat', {
@@ -22,7 +24,8 @@ export class DialogueService {
         body: JSON.stringify({
           characterState: state,
           userMessage: userMessage,
-          history: state.conversationHistory
+          history: state.conversationHistory,
+          roundStage: roundStage
         }),
         signal: signal
       });

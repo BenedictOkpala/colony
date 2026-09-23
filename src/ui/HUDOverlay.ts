@@ -49,23 +49,24 @@ export class HUDOverlay {
     const cam = scene.cameras.main;
     const isTouch = InputMode.isTouch();
 
-    // 1. Sleek Top-Left Objective / Duties Panel (Clean Earth-Tech Glass Card)
-    this.taskBoxBg = scene.add.rectangle(118, 44, 206, 60, 0x0a0f1d, 0.92);
+    // 1. Sleek Top-Left Objective / Mission Card (Unified Earth-Tech Glass Card)
+    this.taskBoxBg = scene.add.rectangle(122, 50, 216, 72, 0x0a0f1d, 0.93);
     this.taskBoxBg.setStrokeStyle(1.5, 0x334155, 0.95);
     this.container.add(this.taskBoxBg);
 
-    this.taskHeader = scene.add.text(24, 22, 'COLONY DUTIES', {
-      fontSize: '10px',
+    this.taskHeader = scene.add.text(24, 22, '◈ COLONY DUTIES', {
+      fontSize: '9.5px',
       fontFamily: 'Courier, monospace',
       fontStyle: 'bold',
       color: '#38bdf8'
     });
     this.container.add(this.taskHeader);
 
-    this.taskItem = scene.add.text(24, 42, 'Complete your assigned task (0/1)', {
+    this.taskItem = scene.add.text(24, 38, 'Complete your assigned task (0/1)', {
       fontSize: '11px',
       fontFamily: 'Segoe UI, Tahoma, sans-serif',
-      color: '#e2e8f0'
+      color: '#e2e8f0',
+      wordWrap: { width: 196 }
     });
     this.container.add(this.taskItem);
 
@@ -83,16 +84,15 @@ export class HUDOverlay {
     this.roomText.setOrigin(0.5);
     this.container.add(this.roomText);
 
-    // 3. Subtle Objective Guidance Indicator (Top Left under Objective Box)
-    this.navGuideContainer = scene.add.container(118, 86);
+    // 3. Integrated Objective Direction Indicator (Within Mission Card)
+    this.navGuideContainer = scene.add.container(122, 70);
     this.navGuideContainer.setAlpha(0);
     this.container.add(this.navGuideContainer);
 
-    const navBg = scene.add.rectangle(0, 0, 196, 22, 0x0f172a, 0.88);
-    navBg.setStrokeStyle(1, 0x0284c7, 0.8);
-    this.navGuideContainer.add(navBg);
+    const navDivider = scene.add.rectangle(0, -9, 196, 1, 0x1e293b, 0.9);
+    this.navGuideContainer.add(navDivider);
 
-    this.navGuideIcon = scene.add.text(-82, 0, '◀', {
+    this.navGuideIcon = scene.add.text(-86, 0, '◀', {
       fontSize: '10px',
       fontFamily: 'sans-serif',
       color: '#38bdf8'
@@ -100,8 +100,8 @@ export class HUDOverlay {
     this.navGuideIcon.setOrigin(0.5);
     this.navGuideContainer.add(this.navGuideIcon);
 
-    this.navGuideText = scene.add.text(-68, -6, 'WEST TUNNEL ➔ GENERATOR', {
-      fontSize: '9px',
+    this.navGuideText = scene.add.text(-72, -6, 'WEST  //  GENERATOR ROOM', {
+      fontSize: '9.5px',
       fontFamily: 'Courier, monospace',
       fontStyle: 'bold',
       color: '#94a3b8'
@@ -114,24 +114,24 @@ export class HUDOverlay {
       this.createDesktopTutorialCard(cam);
     }
 
-    // 5. Desktop Contextual Interaction Prompt (Bottom-Center)
-    this.desktopPromptContainer = scene.add.container(cam.width / 2, cam.height - 48);
+    // 5. Desktop Contextual Interaction Prompt (Compact COLONY Terminal Treatment)
+    this.desktopPromptContainer = scene.add.container(cam.width / 2, cam.height - 40);
     this.desktopPromptContainer.setVisible(false);
     this.container.add(this.desktopPromptContainer);
 
-    this.desktopPromptBg = scene.add.rectangle(0, 0, 210, 40, 0x0284c7, 0.94);
-    this.desktopPromptBg.setStrokeStyle(2, 0x38bdf8);
+    this.desktopPromptBg = scene.add.rectangle(0, 0, 160, 26, 0x0a0f1d, 0.94);
+    this.desktopPromptBg.setStrokeStyle(1, 0x334155, 0.95);
     this.desktopPromptBg.setInteractive({ useHandCursor: true });
     this.desktopPromptBg.on('pointerdown', () => {
       if (this.onInteractClick) this.onInteractClick();
     });
     this.desktopPromptContainer.add(this.desktopPromptBg);
 
-    this.desktopPromptText = scene.add.text(0, 0, '[E] TALK TO ROOK', {
-      fontSize: '12px',
+    this.desktopPromptText = scene.add.text(0, 0, '[E] Talk to Rook', {
+      fontSize: '11px',
       fontFamily: 'Segoe UI, Tahoma, sans-serif',
       fontStyle: 'bold',
-      color: '#ffffff'
+      color: '#e2e8f0'
     });
     this.desktopPromptText.setOrigin(0.5);
     this.desktopPromptContainer.add(this.desktopPromptText);
@@ -365,6 +365,21 @@ export class HUDOverlay {
     }
   }
 
+  private currentTargetRoomName: string = 'GENERATOR ROOM';
+
+  public updateTargetRoom(roomId: string | null): void {
+    if (!roomId) return;
+    const roomMap: Record<string, string> = {
+      generator: 'GENERATOR ROOM',
+      hub: 'CENTRAL HUB',
+      biolab: 'BIO-LAB',
+      food_storage: 'FOOD STORAGE',
+      comms: 'COMMS & RELAY',
+      nursery: 'NURSERY'
+    };
+    this.currentTargetRoomName = roomMap[roomId] || roomId.toUpperCase();
+  }
+
   public updateGuidePointer(playerX: number, playerY: number): void {
     if (!this.targetLocation) return;
 
@@ -374,20 +389,21 @@ export class HUDOverlay {
     if (dist < 120) {
       this.navGuideContainer.setAlpha(0);
     } else {
-      this.navGuideContainer.setAlpha(0.9);
+      this.navGuideContainer.setAlpha(0.95);
       const deg = Phaser.Math.RadToDeg(angle);
+      const roomStr = this.currentTargetRoomName;
       if (deg >= -45 && deg < 45) {
         this.navGuideIcon.setText('▶');
-        this.navGuideText.setText('EAST ➔ TOWARDS SECTOR');
+        this.navGuideText.setText(`EAST  //  ${roomStr}`);
       } else if (deg >= 45 && deg < 135) {
         this.navGuideIcon.setText('▼');
-        this.navGuideText.setText('SOUTH ➔ TOWARDS SECTOR');
+        this.navGuideText.setText(`SOUTH  //  ${roomStr}`);
       } else if (deg >= -135 && deg < -45) {
         this.navGuideIcon.setText('▲');
-        this.navGuideText.setText('NORTH ➔ TOWARDS SECTOR');
+        this.navGuideText.setText(`NORTH  //  ${roomStr}`);
       } else {
         this.navGuideIcon.setText('◀');
-        this.navGuideText.setText('WEST ➔ GENERATOR ROOM');
+        this.navGuideText.setText(`WEST  //  ${roomStr}`);
       }
     }
   }
@@ -463,13 +479,15 @@ export class HUDOverlay {
     this.onInteractClick = onClick;
 
     if (isInvestigationTarget) {
-      this.desktopPromptBg.setFillStyle(0xb45309, 0.95);
-      this.desktopPromptBg.setStrokeStyle(2, 0xf59e0b);
+      this.desktopPromptBg.setFillStyle(0x2d1a04, 0.95);
+      this.desktopPromptBg.setStrokeStyle(1.5, 0xf59e0b);
+      this.desktopPromptText.setColor('#fef08a');
       this.mobileActionBg.setFillStyle(0xb45309, 0.95);
       this.mobileActionBg.setStrokeStyle(2.5, 0xf59e0b);
     } else {
-      this.desktopPromptBg.setFillStyle(0x0284c7, 0.94);
-      this.desktopPromptBg.setStrokeStyle(2, 0x38bdf8);
+      this.desktopPromptBg.setFillStyle(0x0a0f1d, 0.92);
+      this.desktopPromptBg.setStrokeStyle(1, 0x334155);
+      this.desktopPromptText.setColor('#94a3b8');
       this.mobileActionBg.setFillStyle(0x0284c7, 0.94);
       this.mobileActionBg.setStrokeStyle(2.5, 0x38bdf8);
     }
@@ -489,7 +507,7 @@ export class HUDOverlay {
       });
       this.desktopPromptContainer.setVisible(false);
     } else {
-      this.desktopPromptText.setText(`[E] ${action.toUpperCase()} ${target.toUpperCase()}`);
+      this.desktopPromptText.setText(`[E] ${action} ${target}`);
       this.desktopPromptContainer.setVisible(true);
       this.mobileActionBtn.setVisible(false);
     }

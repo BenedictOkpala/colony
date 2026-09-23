@@ -221,10 +221,9 @@ export class ColonyMap {
     hubBanner.setDepth(2);
 
     // Directional Navigation Signs in Central Hub
-    this.addNavSign(18.5 * 32, 17 * 32, 'sign_gen_left');      // Left toward Generator / Food Storage
-    this.addNavSign(33.5 * 32, 16.5 * 32, 'sign_biolab_right'); // Right toward Bio-Lab
-    this.addNavSign(33.5 * 32, 18.5 * 32, 'sign_comms_right');  // Right toward Comms
-    this.addNavSign(26 * 32, 23.5 * 32, 'sign_nursery_down');   // Down toward Nursery
+    this.addNavSign(18.5 * 32, 17 * 32, 'sign_gen_left');       // Left toward Generator / Food Storage
+    this.addNavSign(33.5 * 32, 17 * 32, 'sign_biolab_right');   // Right toward Bio-Lab & Comms
+    this.addNavSign(26 * 32, 23.5 * 32, 'sign_nursery_down');    // Down toward Nursery
 
     // Organic Rock Clusters & Roots breaking rectangular boundaries
     this.addRockCluster(19.5 * 32, 15 * 32);
@@ -247,9 +246,8 @@ export class ColonyMap {
     this.addTunnelArch(17 * 32, 17 * 32);
     this.addTunnelArch(15 * 32, 17 * 32);
 
-    // West T-Junction Navigation Signs (at tile x: 10, y: 17)
+    // West T-Junction Navigation Sign (at tile x: 10, y: 17)
     this.addNavSign(11 * 32, 15 * 32, 'sign_food_up');   // Up to Food Storage
-    this.addNavSign(7 * 32, 16 * 32, 'sign_gen_left');   // West into Generator Room
 
     // ==========================================
     // 3. GENERATOR ROOM
@@ -259,8 +257,8 @@ export class ColonyMap {
     genAux.setDepth(2);
     this.addLantern(5 * 32, 16 * 32);
     this.addLantern(13 * 32, 16 * 32);
-    this.addRockCluster(5 * 32, 22 * 32);
-    this.addRoots(12 * 32, 22 * 32);
+    this.addRockCluster(4.5 * 32, 22.5 * 32);
+    this.addRoots(13.5 * 32, 22.5 * 32);
     this.addNavSign(13.5 * 32, 17 * 32, 'sign_hub'); // Exit back to Central Hub
 
     // ==========================================

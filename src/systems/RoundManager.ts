@@ -6,7 +6,7 @@ const TILE_SIZE = 32;
 export class RoundManager {
   private currentStage: RoundStage = 'DUTIES';
   private incidentTimer: number = 0;
-  private readonly incidentTriggerTime: number = 3000; // ~3 seconds after player gains control
+  private readonly incidentTriggerTime: number = 1800; // ~1.8 seconds after round start
   private hasTriggeredIncident: boolean = false;
 
   private secondSabotageTimer: number = 0;

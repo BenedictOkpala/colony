@@ -91,8 +91,22 @@ export class NPC extends Character {
     }
   }
 
-  public updateProximityIndicator(playerX: number, playerY: number, isTouch: boolean, isActiveTarget: boolean = false): number {
+  public updateProximityIndicator(
+    playerX: number,
+    playerY: number,
+    isTouch: boolean,
+    isActiveTarget: boolean = false,
+    hasActiveInvestigationTarget: boolean = false
+  ): number {
     const dist = Phaser.Math.Distance.Between(this.sprite.x, this.sprite.y, playerX, playerY);
+
+    // Suppress indicator if speech bubble is active or if another NPC is the active investigation target
+    if (this.activeSpeechBubble || (!isActiveTarget && hasActiveInvestigationTarget)) {
+      if (this.indicatorContainer.alpha > 0) {
+        this.indicatorContainer.setAlpha(0);
+      }
+      return dist;
+    }
 
     // Update icon style based on input mode and active investigation status
     if (isActiveTarget) {
@@ -123,9 +137,9 @@ export class NPC extends Character {
 
     // Visual Hierarchy:
     // Active Target: visible from 170px with golden accent
-    // Inactive NPC: visible only when approaching (< 110px) with subtle tone
-    const maxVisibleDist = isActiveTarget ? 170 : 110;
-    const inRangeDist = 65;
+    // Inactive NPC: visible only when approaching (< 90px) with subtle tone
+    const maxVisibleDist = isActiveTarget ? 170 : 90;
+    const inRangeDist = 60;
 
     if (dist > maxVisibleDist) {
       if (this.indicatorContainer.alpha > 0) {
@@ -145,9 +159,9 @@ export class NPC extends Character {
 
   private activeSpeechBubble?: Phaser.GameObjects.Container;
 
-  public showSpeechBubble(dialogueText: string): void {
+  public showSpeechBubble(dialogueText: string, durationMs: number = 2400): void {
     this.isWaiting = true;
-    this.moveTimer = 240; // Pause for ~4 seconds
+    this.moveTimer = Math.round(durationMs / 16); // Pause movement during speech bubble
     this.sprite.setVelocity(0, 0);
 
     if (this.activeSpeechBubble) {
@@ -155,16 +169,19 @@ export class NPC extends Character {
       this.activeSpeechBubble = undefined;
     }
 
-    const bubble = this.scene.add.container(this.sprite.x, this.sprite.y - 75);
+    // Hide proximity indicator while speaking
+    this.indicatorContainer.setAlpha(0);
+
+    const bubble = this.scene.add.container(this.sprite.x, this.sprite.y - 62);
     bubble.setDepth(30);
     this.activeSpeechBubble = bubble;
 
-    const paddingX = 14;
-    const paddingY = 8;
-    const maxTextWidth = 190;
+    const paddingX = 10;
+    const paddingY = 6;
+    const maxTextWidth = 160;
 
     const textObj = this.scene.add.text(0, 0, dialogueText, {
-      fontSize: '11px',
+      fontSize: '10.5px',
       fontFamily: 'Segoe UI, sans-serif',
       color: '#f8fafc',
       wordWrap: { width: maxTextWidth, useAdvancedWrap: true },
@@ -173,49 +190,38 @@ export class NPC extends Character {
     });
     textObj.setOrigin(0.5);
 
-    const bWidth = Math.max(120, textObj.width + paddingX * 2);
-    const bHeight = textObj.height + paddingY * 2 + 12;
+    const bWidth = Math.max(100, textObj.width + paddingX * 2);
+    const bHeight = textObj.height + paddingY * 2;
 
-    const bg = this.scene.add.rectangle(0, -2, bWidth, bHeight, 0x0f172a, 0.94);
+    const bg = this.scene.add.rectangle(0, 0, bWidth, bHeight, 0x0f172a, 0.94);
     bg.setStrokeStyle(1.5, this.config.color || 0x38bdf8, 0.95);
     bubble.add(bg);
-
-    const nameTag = this.scene.add.text(0, -bHeight / 2 - 2, this.config.name.toUpperCase(), {
-      fontSize: '9px',
-      fontFamily: 'Courier, monospace',
-      fontStyle: 'bold',
-      color: this.config.colorHex || '#38bdf8',
-      backgroundColor: '#020617',
-      padding: { left: 4, right: 4, top: 1, bottom: 1 }
-    });
-    nameTag.setOrigin(0.5);
-    bubble.add(nameTag);
 
     bubble.add(textObj);
 
     // Subtle pointer tip below bubble
-    const tip = this.scene.add.triangle(0, bHeight / 2 - 2, -6, 0, 6, 0, 0, 7, 0x0f172a);
+    const tip = this.scene.add.triangle(0, bHeight / 2, -5, 0, 5, 0, 0, 5, 0x0f172a);
     bubble.add(tip);
 
     // Animate pop-in
-    bubble.setScale(0.85);
+    bubble.setScale(0.88);
     bubble.setAlpha(0);
     this.scene.tweens.add({
       targets: bubble,
       scaleX: 1,
       scaleY: 1,
       alpha: 1,
-      duration: 200,
+      duration: 180,
       ease: 'Back.easeOut'
     });
 
-    this.scene.time.delayedCall(4500, () => {
+    this.scene.time.delayedCall(durationMs, () => {
       if (this.activeSpeechBubble === bubble) {
         this.scene.tweens.add({
           targets: bubble,
           alpha: 0,
-          y: bubble.y - 8,
-          duration: 300,
+          y: bubble.y - 6,
+          duration: 250,
           onComplete: () => {
             if (this.activeSpeechBubble === bubble) {
               bubble.destroy();

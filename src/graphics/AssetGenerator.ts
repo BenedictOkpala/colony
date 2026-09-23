@@ -451,8 +451,8 @@ export class AssetGenerator {
         ctx.arc(0, 0, 68, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.strokeStyle = '#5c3a21';
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#3f2512';
+        ctx.lineWidth = 1.5;
         for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
           ctx.beginPath();
           ctx.moveTo(0, 0);
@@ -464,19 +464,19 @@ export class AssetGenerator {
         ctx.beginPath();
         ctx.arc(0, 0, 26, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = '#f59e0b';
-        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = '#78350f';
+        ctx.lineWidth = 1.5;
         ctx.stroke();
 
-        ctx.fillStyle = '#f59e0b';
+        ctx.fillStyle = '#854d0e';
         ctx.beginPath();
         ctx.ellipse(0, 6, 6, 9, 0, 0, Math.PI * 2);
         ctx.ellipse(0, -5, 5, 5, 0, 0, Math.PI * 2);
         ctx.ellipse(0, -14, 4, 4, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.strokeStyle = '#fde047';
-        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = '#a16207';
+        ctx.lineWidth = 1.0;
         ctx.beginPath();
         ctx.moveTo(-2, -16); ctx.lineTo(-6, -22);
         ctx.moveTo(2, -16); ctx.lineTo(6, -22);
